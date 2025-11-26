@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -189,7 +190,7 @@ public class AdminService {
         validateCreateEmployeeDTO(dto);
 
         if (employeeRepository.existsByIdNumber(dto.getIdNumber())) {
-            throw new DuplicateIdNumberException("Employee with ID number " + dto.getIdNumber() + " already exists");
+            throw new DuplicateIdNumberException("An employee with this ID number already exists");
         }
 
         Employee employee = employeeMapper.toEmployee(dto);
@@ -321,11 +322,9 @@ public class AdminService {
 
     public List<ShiftChangeDTO> getAllShiftChanges() {
         List<ShiftChange> shiftChanges = shiftChangeRepository.findAllOrderByChangeDateTimeDesc();
-        List<ShiftChangeDTO> result = new ArrayList<>();
-        for (ShiftChange sc : shiftChanges) {
-            result.add(shiftChangeMapper.toShiftChangeDTO(sc));
-        }
-        return result;
+        return shiftChanges.stream()
+                .map(shiftChangeMapper::toShiftChangeDTO)
+                .collect(Collectors.toList());
     }
 
 }

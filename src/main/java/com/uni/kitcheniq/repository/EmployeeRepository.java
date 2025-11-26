@@ -16,4 +16,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     @Query("SELECT e FROM Employee e")
     Optional<List<Employee>> getAllEmployees();
 
+    boolean existsByIdNumber(String idNumber);
+
 }

@@ -18,4 +18,5 @@ public class CreateEmployeeDTO {
     private String idNumber;
     private EmployeeType position;
     private BigDecimal hourlyRate;
+    private String password;
 }

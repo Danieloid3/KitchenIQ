@@ -192,8 +192,8 @@ public class AdminService {
             throw new EmployeeValidationException("Employee with ID number " + createEmployeeDTO.getIdNumber() + " already exists");
         }
 
-        String defaultPassword = passwordEncoder.encode("password123");
-        Employee employee = employeeMapper.toEmployee(createEmployeeDTO, defaultPassword);
+        String encodedPassword = passwordEncoder.encode(createEmployeeDTO.getPassword());
+        Employee employee = employeeMapper.toEmployee(createEmployeeDTO, encodedPassword);
         Employee savedEmployee = employeeRepository.save(employee);
 
         return employeeMapper.toEmployeeDTO(savedEmployee);
@@ -223,6 +223,9 @@ public class AdminService {
         }
         if (dto.getHourlyRate().compareTo(BigDecimal.ZERO) <= 0) {
             throw new EmployeeValidationException("Employee hourly rate must be a positive value");
+        }
+        if (dto.getPassword() == null || dto.getPassword().trim().isEmpty()) {
+            throw new EmployeeValidationException("Employee password is required");
         }
     }
 
@@ -309,12 +312,18 @@ public class AdminService {
         return ShiftChangeResponseDTO.builder()
                 .id(savedShiftChange.getId())
                 .outgoingEmployeeId(outgoingEmployee.get().getId())
-                .outgoingEmployeeName(outgoingEmployee.get().getName() + " " + (outgoingEmployee.get().getLastName() != null ? outgoingEmployee.get().getLastName() : ""))
+                .outgoingEmployeeName(formatEmployeeName(outgoingEmployee.get()))
                 .incomingEmployeeId(incomingEmployee.get().getId())
-                .incomingEmployeeName(incomingEmployee.get().getName() + " " + (incomingEmployee.get().getLastName() != null ? incomingEmployee.get().getLastName() : ""))
+                .incomingEmployeeName(formatEmployeeName(incomingEmployee.get()))
                 .changeDateTime(changeDateTime)
                 .message("Shift change registered successfully")
                 .build();
+    }
+
+    private String formatEmployeeName(Employee employee) {
+        String firstName = employee.getName() != null ? employee.getName().trim() : "";
+        String lastName = employee.getLastName() != null ? employee.getLastName().trim() : "";
+        return (firstName + " " + lastName).trim();
     }
 
     private void validateShiftChangeDTO(ShiftChangeDTO dto) {

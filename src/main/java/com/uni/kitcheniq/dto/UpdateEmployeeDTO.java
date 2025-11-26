@@ -7,17 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class EmployeeDTO {
-    private String id;
+public class UpdateEmployeeDTO {
     private String name;
     private String lastName;
-    private EmployeeType employeeType;
+    private EmployeeType position;
     private BigDecimal hourlyRate;
-    private LocalDate contractDate;
 }

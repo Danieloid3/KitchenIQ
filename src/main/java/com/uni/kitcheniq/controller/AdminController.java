@@ -91,4 +91,73 @@ public class AdminController {
         List<InventoryItemDTO> items = adminService.getInventoryItemsBySupplierId(supplierId);
         return ResponseEntity.ok(items);
     }
+
+    // ==================== Employee Management - Historia 1: New Employee Registration ====================
+
+    /**
+     * Register a new employee in the system.
+     * Required fields: name, lastName, idNumber, position, hourlyRate
+     * Validations:
+     * - idNumber accepts only numbers
+     * - hourlyRate accepts only positive values
+     * - idNumber must not exist previously
+     * The contract date is automatically generated with the current date.
+     */
+    @PostMapping("/register-employee")
+    public ResponseEntity<EmployeeDTO> registerEmployee(@RequestBody CreateEmployeeDTO createEmployeeDTO) {
+        EmployeeDTO employee = adminService.registerEmployee(createEmployeeDTO);
+        return ResponseEntity.ok(employee);
+    }
+
+    // ==================== Employee Management - Historia 2: Employee Information Editing ====================
+
+    /**
+     * Get employee details for editing (enter edit mode).
+     * Returns the employee information that can be edited.
+     */
+    @GetMapping("/employee/{employeeId}")
+    public ResponseEntity<EmployeeDTO> getEmployeeForEdit(@PathVariable String employeeId) {
+        EmployeeDTO employee = adminService.getEmployeeById(employeeId);
+        return ResponseEntity.ok(employee);
+    }
+
+    /**
+     * Update employee information (save changes).
+     * Editable fields: name, lastName, position, hourlyRate
+     * Non-editable fields: idNumber, contractDate
+     * Validation: hourlyRate must be positive
+     */
+    @PutMapping("/employee/{employeeId}")
+    public ResponseEntity<EmployeeDTO> updateEmployee(
+            @PathVariable String employeeId,
+            @RequestBody UpdateEmployeeDTO updateEmployeeDTO) {
+        EmployeeDTO employee = adminService.updateEmployee(employeeId, updateEmployeeDTO);
+        return ResponseEntity.ok(employee);
+    }
+
+    /**
+     * Cancel employee edit (returns current employee state without changes).
+     * This endpoint allows canceling the edit operation by returning the current state.
+     */
+    @GetMapping("/employee/{employeeId}/cancel-edit")
+    public ResponseEntity<EmployeeDTO> cancelEmployeeEdit(@PathVariable String employeeId) {
+        EmployeeDTO employee = adminService.getEmployeeById(employeeId);
+        return ResponseEntity.ok(employee);
+    }
+
+    // ==================== Employee Management - Historia 3: Shift Change ====================
+
+    /**
+     * Register a shift change between two employees.
+     * Required fields: outgoingEmployeeId, incomingEmployeeId
+     * Validations:
+     * - Both IDs must exist
+     * - Both employees must have position "EMPLOYEE"
+     * The system records the exact date and time of the change.
+     */
+    @PostMapping("/shift-change")
+    public ResponseEntity<ShiftChangeResponseDTO> registerShiftChange(@RequestBody ShiftChangeDTO shiftChangeDTO) {
+        ShiftChangeResponseDTO response = adminService.registerShiftChange(shiftChangeDTO);
+        return ResponseEntity.ok(response);
+    }
 }

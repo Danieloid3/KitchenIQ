@@ -84,4 +84,40 @@ public class GlobalExceptionHandler {
         errorMessage.setErrorCode("NOT_EMPLOYEES");
         return ResponseEntity.status(403).body(errorMessage);
     }
+
+    @ExceptionHandler(EmployeeValidationException.class)
+    public ResponseEntity<ErrorMessage> handleEmployeeValidationException(EmployeeValidationException ex, HttpServletRequest request) {
+        ErrorMessage errorMessage = new ErrorMessage();
+        errorMessage.setMessage(ex.getMessage());
+        errorMessage.setCause(ex.getCause() != null ? ex.getCause().toString() : null);
+        errorMessage.setStatusCode(400);
+        errorMessage.setTimestamp(System.currentTimeMillis());
+        errorMessage.setPath(request.getRequestURI());
+        errorMessage.setErrorCode("EMPLOYEE_VALIDATION_ERROR");
+        return ResponseEntity.status(400).body(errorMessage);
+    }
+
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<ErrorMessage> handleEmployeeNotFoundException(EmployeeNotFoundException ex, HttpServletRequest request) {
+        ErrorMessage errorMessage = new ErrorMessage();
+        errorMessage.setMessage(ex.getMessage());
+        errorMessage.setCause(ex.getCause() != null ? ex.getCause().toString() : null);
+        errorMessage.setStatusCode(404);
+        errorMessage.setTimestamp(System.currentTimeMillis());
+        errorMessage.setPath(request.getRequestURI());
+        errorMessage.setErrorCode("EMPLOYEE_NOT_FOUND");
+        return ResponseEntity.status(404).body(errorMessage);
+    }
+
+    @ExceptionHandler(InvalidShiftChangeException.class)
+    public ResponseEntity<ErrorMessage> handleInvalidShiftChangeException(InvalidShiftChangeException ex, HttpServletRequest request) {
+        ErrorMessage errorMessage = new ErrorMessage();
+        errorMessage.setMessage(ex.getMessage());
+        errorMessage.setCause(ex.getCause() != null ? ex.getCause().toString() : null);
+        errorMessage.setStatusCode(400);
+        errorMessage.setTimestamp(System.currentTimeMillis());
+        errorMessage.setPath(request.getRequestURI());
+        errorMessage.setErrorCode("INVALID_SHIFT_CHANGE");
+        return ResponseEntity.status(400).body(errorMessage);
+    }
 }

@@ -1,18 +1,20 @@
 package com.uni.kitcheniq.service;
 
 import com.uni.kitcheniq.dto.*;
+import com.uni.kitcheniq.enums.EmployeeType;
 import com.uni.kitcheniq.enums.PurchaseOrderType;
-import com.uni.kitcheniq.exception.NoItemFoundException;
-import com.uni.kitcheniq.exception.NotEmployees;
-import com.uni.kitcheniq.exception.SupplierNotFoundException;
+import com.uni.kitcheniq.exception.*;
 import com.uni.kitcheniq.mapper.*;
 import com.uni.kitcheniq.models.*;
 import com.uni.kitcheniq.repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -29,6 +31,8 @@ public class AdminService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeMapper employeeMapper;
     private final SupplierMapper supplierMapper;
+    private final ShiftChangeRepository shiftChangeRepository;
+    private final PasswordEncoder passwordEncoder;
     private final EntityManager em;
 
     public String addInventoryItem(InventoryItemDTO inventoryItemDTO) {
@@ -177,6 +181,155 @@ public class AdminService {
             itemDTOs.add(inventoryItemMapper.toInventoryItemDTO(item));
         }
         return itemDTOs;
+    }
+
+    // ==================== Employee Management - Historia 1: New Employee Registration ====================
+
+    public EmployeeDTO registerEmployee(CreateEmployeeDTO createEmployeeDTO) {
+        validateCreateEmployeeDTO(createEmployeeDTO);
+
+        if (employeeRepository.existsById(createEmployeeDTO.getIdNumber())) {
+            throw new EmployeeValidationException("Employee with ID number " + createEmployeeDTO.getIdNumber() + " already exists");
+        }
+
+        String defaultPassword = passwordEncoder.encode("password123");
+        Employee employee = employeeMapper.toEmployee(createEmployeeDTO, defaultPassword);
+        Employee savedEmployee = employeeRepository.save(employee);
+
+        return employeeMapper.toEmployeeDTO(savedEmployee);
+    }
+
+    private void validateCreateEmployeeDTO(CreateEmployeeDTO dto) {
+        if (dto == null) {
+            throw new EmployeeValidationException("Employee data is missing");
+        }
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new EmployeeValidationException("Employee name is required");
+        }
+        if (dto.getLastName() == null || dto.getLastName().trim().isEmpty()) {
+            throw new EmployeeValidationException("Employee last name is required");
+        }
+        if (dto.getIdNumber() == null || dto.getIdNumber().trim().isEmpty()) {
+            throw new EmployeeValidationException("Employee ID number is required");
+        }
+        if (!dto.getIdNumber().matches("^[0-9]+$")) {
+            throw new EmployeeValidationException("Employee ID number must contain only numbers");
+        }
+        if (dto.getPosition() == null) {
+            throw new EmployeeValidationException("Employee position is required");
+        }
+        if (dto.getHourlyRate() == null) {
+            throw new EmployeeValidationException("Employee hourly rate is required");
+        }
+        if (dto.getHourlyRate().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new EmployeeValidationException("Employee hourly rate must be a positive value");
+        }
+    }
+
+    // ==================== Employee Management - Historia 2: Employee Information Editing ====================
+
+    public EmployeeDTO getEmployeeById(String employeeId) {
+        Optional<Employee> employee = employeeRepository.findById(employeeId);
+        if (employee.isEmpty()) {
+            throw new EmployeeNotFoundException("Employee not found with ID: " + employeeId);
+        }
+        return employeeMapper.toEmployeeDTO(employee.get());
+    }
+
+    @Transactional
+    public EmployeeDTO updateEmployee(String employeeId, UpdateEmployeeDTO updateEmployeeDTO) {
+        validateUpdateEmployeeDTO(updateEmployeeDTO);
+
+        Optional<Employee> optionalEmployee = employeeRepository.findById(employeeId);
+        if (optionalEmployee.isEmpty()) {
+            throw new EmployeeNotFoundException("Employee not found with ID: " + employeeId);
+        }
+
+        Employee employee = optionalEmployee.get();
+        
+        if (updateEmployeeDTO.getName() != null && !updateEmployeeDTO.getName().trim().isEmpty()) {
+            employee.setName(updateEmployeeDTO.getName());
+        }
+        if (updateEmployeeDTO.getLastName() != null && !updateEmployeeDTO.getLastName().trim().isEmpty()) {
+            employee.setLastName(updateEmployeeDTO.getLastName());
+        }
+        if (updateEmployeeDTO.getPosition() != null) {
+            employee.setType(updateEmployeeDTO.getPosition());
+        }
+        if (updateEmployeeDTO.getHourlyRate() != null) {
+            employee.setHourlyRate(updateEmployeeDTO.getHourlyRate());
+        }
+
+        Employee savedEmployee = employeeRepository.save(employee);
+        return employeeMapper.toEmployeeDTO(savedEmployee);
+    }
+
+    private void validateUpdateEmployeeDTO(UpdateEmployeeDTO dto) {
+        if (dto == null) {
+            throw new EmployeeValidationException("Update data is missing");
+        }
+        if (dto.getHourlyRate() != null && dto.getHourlyRate().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new EmployeeValidationException("Employee hourly rate must be a positive value");
+        }
+    }
+
+    // ==================== Employee Management - Historia 3: Shift Change ====================
+
+    @Transactional
+    public ShiftChangeResponseDTO registerShiftChange(ShiftChangeDTO shiftChangeDTO) {
+        validateShiftChangeDTO(shiftChangeDTO);
+
+        Optional<Employee> outgoingEmployee = employeeRepository.findById(shiftChangeDTO.getOutgoingEmployeeId());
+        Optional<Employee> incomingEmployee = employeeRepository.findById(shiftChangeDTO.getIncomingEmployeeId());
+
+        if (outgoingEmployee.isEmpty()) {
+            throw new EmployeeNotFoundException("Outgoing employee not found with ID: " + shiftChangeDTO.getOutgoingEmployeeId());
+        }
+        if (incomingEmployee.isEmpty()) {
+            throw new EmployeeNotFoundException("Incoming employee not found with ID: " + shiftChangeDTO.getIncomingEmployeeId());
+        }
+
+        if (outgoingEmployee.get().getType() != EmployeeType.EMPLOYEE) {
+            throw new InvalidShiftChangeException("Outgoing employee must have position 'EMPLOYEE'. Current position: " + outgoingEmployee.get().getType());
+        }
+        if (incomingEmployee.get().getType() != EmployeeType.EMPLOYEE) {
+            throw new InvalidShiftChangeException("Incoming employee must have position 'EMPLOYEE'. Current position: " + incomingEmployee.get().getType());
+        }
+
+        LocalDateTime changeDateTime = LocalDateTime.now();
+
+        ShiftChange shiftChange = ShiftChange.builder()
+                .outgoingEmployee(outgoingEmployee.get())
+                .incomingEmployee(incomingEmployee.get())
+                .changeDateTime(changeDateTime)
+                .build();
+
+        ShiftChange savedShiftChange = shiftChangeRepository.save(shiftChange);
+
+        return ShiftChangeResponseDTO.builder()
+                .id(savedShiftChange.getId())
+                .outgoingEmployeeId(outgoingEmployee.get().getId())
+                .outgoingEmployeeName(outgoingEmployee.get().getName() + " " + (outgoingEmployee.get().getLastName() != null ? outgoingEmployee.get().getLastName() : ""))
+                .incomingEmployeeId(incomingEmployee.get().getId())
+                .incomingEmployeeName(incomingEmployee.get().getName() + " " + (incomingEmployee.get().getLastName() != null ? incomingEmployee.get().getLastName() : ""))
+                .changeDateTime(changeDateTime)
+                .message("Shift change registered successfully")
+                .build();
+    }
+
+    private void validateShiftChangeDTO(ShiftChangeDTO dto) {
+        if (dto == null) {
+            throw new InvalidShiftChangeException("Shift change data is missing");
+        }
+        if (dto.getOutgoingEmployeeId() == null || dto.getOutgoingEmployeeId().trim().isEmpty()) {
+            throw new InvalidShiftChangeException("Outgoing employee ID is required");
+        }
+        if (dto.getIncomingEmployeeId() == null || dto.getIncomingEmployeeId().trim().isEmpty()) {
+            throw new InvalidShiftChangeException("Incoming employee ID is required");
+        }
+        if (dto.getOutgoingEmployeeId().equals(dto.getIncomingEmployeeId())) {
+            throw new InvalidShiftChangeException("Outgoing and incoming employees must be different");
+        }
     }
 
 }

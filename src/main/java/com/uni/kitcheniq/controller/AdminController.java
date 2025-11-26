@@ -91,4 +91,40 @@ public class AdminController {
         List<InventoryItemDTO> items = adminService.getInventoryItemsBySupplierId(supplierId);
         return ResponseEntity.ok(items);
     }
+
+    // ========== Story 1: New Employee Registration ==========
+
+    @PostMapping("/register-employee")
+    public ResponseEntity<EmployeeDTO> registerEmployee(@RequestBody CreateEmployeeDTO createEmployeeDTO) {
+        EmployeeDTO employee = adminService.registerEmployee(createEmployeeDTO);
+        return ResponseEntity.ok(employee);
+    }
+
+    // ========== Story 2: Employee Information Editing ==========
+
+    @GetMapping("/employee/{id}")
+    public ResponseEntity<EmployeeDTO> getEmployeeById(@PathVariable String id) {
+        EmployeeDTO employee = adminService.getEmployeeById(id);
+        return ResponseEntity.ok(employee);
+    }
+
+    @PutMapping("/update-employee/{id}")
+    public ResponseEntity<EmployeeDTO> updateEmployee(@PathVariable String id, @RequestBody UpdateEmployeeDTO updateEmployeeDTO) {
+        EmployeeDTO employee = adminService.updateEmployee(id, updateEmployeeDTO);
+        return ResponseEntity.ok(employee);
+    }
+
+    // ========== Story 3: Shift Change Management ==========
+
+    @PostMapping("/shift-change")
+    public ResponseEntity<ShiftChangeDTO> createShiftChange(@RequestBody CreateShiftChangeDTO createShiftChangeDTO) {
+        ShiftChangeDTO shiftChange = adminService.createShiftChange(createShiftChangeDTO);
+        return ResponseEntity.ok(shiftChange);
+    }
+
+    @GetMapping("/shift-changes")
+    public ResponseEntity<List<ShiftChangeDTO>> getAllShiftChanges() {
+        List<ShiftChangeDTO> shiftChanges = adminService.getAllShiftChanges();
+        return ResponseEntity.ok(shiftChanges);
+    }
 }

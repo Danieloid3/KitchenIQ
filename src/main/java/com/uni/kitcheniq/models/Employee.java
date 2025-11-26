@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -28,6 +30,21 @@ public class Employee implements AppUserDetails{
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "id_number", unique = true)
+    private String idNumber;
+
+    @Column(name = "position")
+    private String position;
+
+    @Column(name = "hourly_rate")
+    private BigDecimal hourlyRate;
+
+    @Column(name = "contract_date")
+    private LocalDate contractDate;
 
     @Column(name = "type", nullable = false)
     @Enumerated(EnumType.ORDINAL)

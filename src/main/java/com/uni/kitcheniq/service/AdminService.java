@@ -292,11 +292,11 @@ public class AdminService {
             throw new EmployeeNotFoundException("Incoming employee not found with ID: " + shiftChangeDTO.getIncomingEmployeeId());
         }
 
-        if (outgoingEmployee.get().getType() != EmployeeType.EMPLOYEE) {
-            throw new InvalidShiftChangeException("Outgoing employee must have position 'EMPLOYEE'. Current position: " + outgoingEmployee.get().getType());
+        if (outgoingEmployee.get().getType() == EmployeeType.ADMIN) {
+            throw new InvalidShiftChangeException("Outgoing employee cannot be an ADMIN. Current position: " + outgoingEmployee.get().getType());
         }
-        if (incomingEmployee.get().getType() != EmployeeType.EMPLOYEE) {
-            throw new InvalidShiftChangeException("Incoming employee must have position 'EMPLOYEE'. Current position: " + incomingEmployee.get().getType());
+        if (incomingEmployee.get().getType() == EmployeeType.ADMIN) {
+            throw new InvalidShiftChangeException("Incoming employee cannot be an ADMIN. Current position: " + incomingEmployee.get().getType());
         }
 
         LocalDateTime changeDateTime = LocalDateTime.now();
